@@ -243,6 +243,7 @@ impl<'a> Submitter<'a> {
     ///
     /// You can also perform this asynchronously with the
     /// [`FilesUpdate`](crate::opcode::FilesUpdate) opcode.
+    #[cfg(not(feature = "sgx"))]
     pub fn register_files_update(&self, offset: u32, fds: &[RawFd]) -> io::Result<usize> {
         let fu = sys::io_uring_files_update {
             offset,
@@ -268,6 +269,13 @@ impl<'a> Submitter<'a> {
             1,
         )
         .map(drop)
+    }
+
+    #[cfg(feature = "sgx")]
+    pub fn register_files_update(&self, _offset: u32, _fds: &[RawFd]) -> io::Result<usize> {
+        // We need some special treatment to pass arguments that contain
+        // pointers through OCalls.
+        unimplemented!()
     }
 
     /// This works just like [`register_eventfd`](Self::register_eventfd), except notifications are

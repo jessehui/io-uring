@@ -21,16 +21,21 @@ unstable = []
 overwrite = [ "bindgen" ]
 direct-syscall = [ "sc" ]
 io_safety = []
+sgx = [ "sgx_types", "sgx_tstd", "sgx_trts", "sgx_libc" ]
 
 [dependencies]
 bitflags = "1"
 libc = { version = "0.2.98", default-features = false }
 sc = { version = "0.2", optional = true }
-
+sgx_types = { path = "../incubator-teaclave-sgx-sdk/sgx_types", optional = true }
+sgx_tstd = { path = "../incubator-teaclave-sgx-sdk/sgx_tstd", optional = true, features = ["backtrace"] }
+sgx_trts = { path = "../incubator-teaclave-sgx-sdk/sgx_trts", optional = true }
+sgx_libc = { path = "../incubator-teaclave-sgx-sdk/sgx_libc", optional = true }
 [build-dependencies]
 bindgen = { version = "0.60", optional = true }
 
 [dev-dependencies]
+tempfile = "3"
 anyhow = "1"
 socket2 = "0.4"
 slab = "0.4"
