@@ -4,15 +4,16 @@
 //! For more detailed documentation, see manpage.
 #![warn(rust_2018_idioms, unused_qualifications)]
 #![cfg_attr(sgx, no_std)]
+#![cfg_attr(feature = "sgx", no_std)]
 
-#[cfg(sgx)]
+#[cfg(feature = "sgx")]
 extern crate sgx_types;
-#[cfg(sgx)]
+#[cfg(feature = "sgx")]
 #[macro_use]
 extern crate sgx_tstd as std;
-#[cfg(sgx)]
+#[cfg(feature = "sgx")]
 extern crate sgx_libc as libc;
-#[cfg(sgx)]
+#[cfg(feature = "sgx")]
 extern crate sgx_trts;
 
 #[cfg(feature = "sgx")]
@@ -169,6 +170,26 @@ impl IoUring {
     #[inline]
     pub fn params(&self) -> &Parameters {
         &self.params
+    }
+
+    pub unsafe fn start_enter_syscall_thread(&self) {
+        sys::start_enter_syscall_thread(self.fd.as_raw_fd());
+    }
+
+    /// Initiate and/or complete asynchronous I/O
+    ///
+    /// # Safety
+    ///
+    /// This provides a raw interface so developer must ensure that parameters are correct.
+    #[inline]
+    pub unsafe fn enter(
+        &self,
+        to_submit: u32,
+        min_complete: u32,
+        flag: u32,
+        sig: Option<&libc::sigset_t>,
+    ) -> io::Result<usize> {
+        self.submitter().enter(to_submit, min_complete, flag, sig)
     }
 
     /// Initiate asynchronous I/O. See [`Submitter::submit`] for more details.

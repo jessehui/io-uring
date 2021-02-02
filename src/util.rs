@@ -3,6 +3,11 @@ use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::sync::atomic;
 use std::{io, mem, ptr};
 
+#[cfg(not(feature = "sgx"))]
+use libc::{ mmap, munmap, close };
+#[cfg(feature = "sgx")]
+use sgx_trts::libc::{self, ocall::mmap, ocall::munmap, ocall::close };
+
 /// A region of memory mapped using `mmap(2)`.
 pub struct Mmap {
     addr: ptr::NonNull<libc::c_void>,
@@ -13,7 +18,7 @@ impl Mmap {
     /// Map `len` bytes starting from the offset `offset` in the file descriptor `fd` into memory.
     pub fn new(fd: &Fd, offset: libc::off_t, len: usize) -> io::Result<Mmap> {
         unsafe {
-            match libc::mmap(
+            match mmap(
                 ptr::null_mut(),
                 len,
                 libc::PROT_READ | libc::PROT_WRITE,
@@ -62,7 +67,7 @@ impl Mmap {
 impl Drop for Mmap {
     fn drop(&mut self) {
         unsafe {
-            libc::munmap(self.addr.as_ptr(), self.len);
+            munmap(self.addr.as_ptr(), self.len);
         }
     }
 }
@@ -109,7 +114,7 @@ impl FromRawFd for Fd {
 impl Drop for Fd {
     fn drop(&mut self) {
         unsafe {
-            libc::close(self.0);
+            close(self.0);
         }
     }
 }
