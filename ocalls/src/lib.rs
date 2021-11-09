@@ -60,7 +60,6 @@ pub extern "C" fn ocall_start_enter_syscall_thread(
     sig: *const c_void,
     sig_size: c_long,
 ) {
-    println!("ocall_start_enter_syscall_thread");
     let sig_addr = sig as c_long;
     thread::spawn(move || loop {
         unsafe {
