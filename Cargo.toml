@@ -17,14 +17,12 @@ exclude = ["ocalls"]
 members = [ "io-uring-test", "io-uring-bench" ]
 
 [features]
-default = [ "libc" ]
 unstable = []
 overwrite = [ "bindgen" ]
 direct-syscall = [ "sc" ]
 sgx = [ "sgx_types", "sgx_tstd", "sgx_trts", "sgx_libc" ]
 
 [dependencies]
-libc = { version = "0.2", optional = true }
 bitflags = "1"
 libc = { version = "0.2.98", default-features = false }
 sc = { version = "0.2", optional = true }

@@ -79,16 +79,17 @@ mod if_linux {
         to_submit: c_uint,
         min_complete: c_uint,
         flags: c_uint,
-        sig: *const sigset_t,
+        arg: *const libc::c_void,
+        size: usize,
     ) -> c_int {
         syscall(
-            __NR_io_uring_enter as c_long,
+            __NR_io_uring_enter as i64,
             fd as c_long,
             to_submit as c_long,
             min_complete as c_long,
             flags as c_long,
-            sig as c_long,
-            core::mem::size_of::<sigset_t>() as c_long,
+            arg as c_long,
+            size as c_long,
         ) as _
     }
 
@@ -98,7 +99,8 @@ mod if_linux {
         to_submit: c_uint,
         min_complete: c_uint,
         flags: c_uint,
-        sig: *const sigset_t,
+        arg: *const libc::c_void,
+        size: usize,
     ) -> c_int {
         sc::syscall6(
             __NR_io_uring_enter as usize,
@@ -106,8 +108,8 @@ mod if_linux {
             to_submit as usize,
             min_complete as usize,
             flags as usize,
-            sig as usize,
-            core::mem::size_of::<sigset_t>() as usize,
+            arg as usize,
+            size,
         ) as _
     }
 
@@ -181,6 +183,7 @@ mod if_sgx {
         min_complete: c_uint,
         flags: c_uint,
         sig: *const sigset_t,
+        size: usize,
     ) -> c_int {
         let mut ret: c_int = 0;
         ocall_io_uring_enter_syscall(
@@ -191,7 +194,7 @@ mod if_sgx {
             min_complete as c_long,
             flags as c_long,
             sig as *const c_void,
-            core::mem::size_of::<sigset_t>() as c_long,
+            size as _,
         );
         ret
     }
