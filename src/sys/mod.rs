@@ -18,105 +18,6 @@ include!(concat!(env!("OUT_DIR"), "/sys.rs"));
 ))]
 include!("sys.rs");
 
-#[cfg(feature = "bindgen")]
-const SYSCALL_REGISTER: c_long = __NR_io_uring_register as _;
-
-#[cfg(not(feature = "bindgen"))]
-const SYSCALL_REGISTER: c_long = libc::SYS_io_uring_register;
-
-#[cfg(feature = "bindgen")]
-const SYSCALL_SETUP: c_long = __NR_io_uring_setup as _;
-
-#[cfg(not(feature = "bindgen"))]
-const SYSCALL_SETUP: c_long = libc::SYS_io_uring_setup;
-
-#[cfg(feature = "bindgen")]
-const SYSCALL_ENTER: c_long = __NR_io_uring_enter as _;
-
-#[cfg(not(feature = "bindgen"))]
-const SYSCALL_ENTER: c_long = libc::SYS_io_uring_enter;
-
-#[cfg(not(feature = "direct-syscall"))]
-pub unsafe fn io_uring_register(
-    fd: c_int,
-    opcode: c_uint,
-    arg: *const c_void,
-    nr_args: c_uint,
-) -> c_int {
-    syscall(
-        SYSCALL_REGISTER,
-        fd as c_long,
-        opcode as c_long,
-        arg as c_long,
-        nr_args as c_long,
-    ) as _
-}
-
-#[cfg(feature = "direct-syscall")]
-pub unsafe fn io_uring_register(
-    fd: c_int,
-    opcode: c_uint,
-    arg: *const c_void,
-    nr_args: c_uint,
-) -> c_int {
-    sc::syscall4(
-        SYSCALL_REGISTER as usize,
-        fd as usize,
-        opcode as usize,
-        arg as usize,
-        nr_args as usize,
-    ) as _
-}
-
-#[cfg(not(feature = "direct-syscall"))]
-pub unsafe fn io_uring_setup(entries: c_uint, p: *mut io_uring_params) -> c_int {
-    syscall(SYSCALL_SETUP, entries as c_long, p as c_long) as _
-}
-
-#[cfg(feature = "direct-syscall")]
-pub unsafe fn io_uring_setup(entries: c_uint, p: *mut io_uring_params) -> c_int {
-    sc::syscall2(SYSCALL_SETUP as usize, entries as usize, p as usize) as _
-}
-
-#[cfg(not(feature = "direct-syscall"))]
-pub unsafe fn io_uring_enter(
-    fd: c_int,
-    to_submit: c_uint,
-    min_complete: c_uint,
-    flags: c_uint,
-    arg: *const libc::c_void,
-    size: usize,
-) -> c_int {
-    syscall(
-        SYSCALL_ENTER,
-        fd as c_long,
-        to_submit as c_long,
-        min_complete as c_long,
-        flags as c_long,
-        arg as c_long,
-        size as c_long,
-    ) as _
-}
-
-#[cfg(feature = "direct-syscall")]
-pub unsafe fn io_uring_enter(
-    fd: c_int,
-    to_submit: c_uint,
-    min_complete: c_uint,
-    flags: c_uint,
-    arg: *const libc::c_void,
-    size: usize,
-) -> c_int {
-    sc::syscall6(
-        SYSCALL_ENTER as usize,
-        fd as usize,
-        to_submit as usize,
-        min_complete as usize,
-        flags as usize,
-        arg as usize,
-        size,
-    ) as _
-}
 #[cfg(not(feature = "sgx"))]
 pub use self::if_linux::*;
 #[cfg(feature = "sgx")]
@@ -126,6 +27,24 @@ pub use self::if_sgx::*;
 mod if_linux {
     use super::*;
 
+    #[cfg(feature = "bindgen")]
+    const SYSCALL_REGISTER: c_long = __NR_io_uring_register as _;
+
+    #[cfg(not(feature = "bindgen"))]
+    const SYSCALL_REGISTER: c_long = libc::SYS_io_uring_register;
+
+    #[cfg(feature = "bindgen")]
+    const SYSCALL_SETUP: c_long = __NR_io_uring_setup as _;
+
+    #[cfg(not(feature = "bindgen"))]
+    const SYSCALL_SETUP: c_long = libc::SYS_io_uring_setup;
+
+    #[cfg(feature = "bindgen")]
+    const SYSCALL_ENTER: c_long = __NR_io_uring_enter as _;
+
+    #[cfg(not(feature = "bindgen"))]
+    const SYSCALL_ENTER: c_long = libc::SYS_io_uring_enter;
+
     #[cfg(not(feature = "direct-syscall"))]
     pub unsafe fn io_uring_register(
         fd: c_int,
@@ -134,7 +53,7 @@ mod if_linux {
         nr_args: c_uint,
     ) -> c_int {
         syscall(
-            __NR_io_uring_register as c_long,
+            SYSCALL_REGISTER,
             fd as c_long,
             opcode as c_long,
             arg as c_long,
@@ -150,7 +69,7 @@ mod if_linux {
         nr_args: c_uint,
     ) -> c_int {
         sc::syscall4(
-            __NR_io_uring_register as usize,
+            SYSCALL_REGISTER as usize,
             fd as usize,
             opcode as usize,
             arg as usize,
@@ -160,16 +79,12 @@ mod if_linux {
 
     #[cfg(not(feature = "direct-syscall"))]
     pub unsafe fn io_uring_setup(entries: c_uint, p: *mut io_uring_params) -> c_int {
-        syscall(
-            __NR_io_uring_setup as c_long,
-            entries as c_long,
-            p as c_long,
-        ) as _
+        syscall(SYSCALL_SETUP, entries as c_long, p as c_long) as _
     }
 
     #[cfg(feature = "direct-syscall")]
     pub unsafe fn io_uring_setup(entries: c_uint, p: *mut io_uring_params) -> c_int {
-        sc::syscall2(__NR_io_uring_setup as usize, entries as usize, p as usize) as _
+        sc::syscall2(SYSCALL_SETUP as usize, entries as usize, p as usize) as _
     }
 
     #[cfg(not(feature = "direct-syscall"))]
@@ -178,16 +93,17 @@ mod if_linux {
         to_submit: c_uint,
         min_complete: c_uint,
         flags: c_uint,
-        sig: *const sigset_t,
+        arg: *const libc::c_void,
+        size: usize,
     ) -> c_int {
         syscall(
-            __NR_io_uring_enter as c_long,
+            SYSCALL_ENTER,
             fd as c_long,
             to_submit as c_long,
             min_complete as c_long,
             flags as c_long,
-            sig as c_long,
-            core::mem::size_of::<sigset_t>() as c_long,
+            arg as c_long,
+            size as c_long,
         ) as _
     }
 
@@ -197,16 +113,17 @@ mod if_linux {
         to_submit: c_uint,
         min_complete: c_uint,
         flags: c_uint,
-        sig: *const sigset_t,
+        arg: *const libc::c_void,
+        size: usize,
     ) -> c_int {
         sc::syscall6(
-            __NR_io_uring_enter as usize,
+            SYSCALL_ENTER as usize,
             fd as usize,
             to_submit as usize,
             min_complete as usize,
             flags as usize,
-            sig as usize,
-            core::mem::size_of::<sigset_t>() as usize,
+            arg as usize,
+            size,
         ) as _
     }
 
@@ -246,6 +163,7 @@ mod if_sgx {
             IORING_REGISTER_FILES => std::mem::size_of::<RawFd>(),
             IORING_REGISTER_EVENTFD => std::mem::size_of::<RawFd>(),
             IORING_REGISTER_FILES_UPDATE => std::mem::size_of::<RawFd>(),
+            IORING_REGISTER_IOWQ_MAX_WORKERS => std::mem::size_of::<[u32; 2]>(),
             _ => panic!("invalid opcode"),
         };
 
@@ -279,7 +197,8 @@ mod if_sgx {
         to_submit: c_uint,
         min_complete: c_uint,
         flags: c_uint,
-        sig: *const sigset_t,
+        arg: *const libc::c_void,
+        size: usize,
     ) -> c_int {
         let mut ret: c_int = 0;
         ocall_io_uring_enter_syscall(
@@ -289,8 +208,8 @@ mod if_sgx {
             to_submit as c_long,
             min_complete as c_long,
             flags as c_long,
-            sig as *const c_void,
-            core::mem::size_of::<sigset_t>() as c_long,
+            arg,
+            size as i64,
         );
         ret
     }

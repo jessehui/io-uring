@@ -3,9 +3,9 @@ use std::sync::atomic;
 use std::{io, ptr};
 
 #[cfg(not(feature = "sgx"))]
-use libc::{ mmap, munmap, close };
+use libc::{mmap, munmap};
 #[cfg(feature = "sgx")]
-use sgx_trts::libc::{self, ocall::mmap, ocall::munmap, ocall::close };
+use sgx_trts::libc::{self, ocall::mmap, ocall::munmap};
 
 /// A region of memory mapped using `mmap(2)`.
 pub struct Mmap {
@@ -80,6 +80,10 @@ mod fd {
 
 #[cfg(not(feature = "io_safety"))]
 mod fd {
+    #[cfg(not(feature = "sgx"))]
+    use libc::close;
+    #[cfg(feature = "sgx")]
+    use sgx_trts::libc::ocall::close;
     use std::mem;
     use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
@@ -112,7 +116,7 @@ mod fd {
     impl Drop for OwnedFd {
         fn drop(&mut self) {
             unsafe {
-                libc::close(self.0);
+                close(self.0);
             }
         }
     }

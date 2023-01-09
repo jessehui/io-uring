@@ -6,14 +6,10 @@
 #![cfg_attr(feature = "sgx", no_std)]
 
 #[cfg(feature = "sgx")]
-extern crate sgx_types;
-#[cfg(feature = "sgx")]
 #[macro_use]
 extern crate sgx_tstd as std;
 #[cfg(feature = "sgx")]
 extern crate sgx_libc as libc;
-#[cfg(feature = "sgx")]
-extern crate sgx_trts;
 
 #[cfg(feature = "sgx")]
 use std::prelude::v1::*;
@@ -227,6 +223,22 @@ impl<S: squeue::EntryMarker, C: cqueue::EntryMarker> IoUring<S, C> {
 
     pub unsafe fn start_enter_syscall_thread(&self) {
         sys::start_enter_syscall_thread(self.fd.as_raw_fd());
+    }
+
+    /// Initiate and/or complete asynchronous I/O
+    ///
+    /// # Safety
+    ///
+    /// This provides a raw interface so developer must ensure that parameters are correct.
+    #[inline]
+    pub unsafe fn enter(
+        &self,
+        to_submit: u32,
+        min_complete: u32,
+        flag: u32,
+        sig: Option<&libc::sigset_t>,
+    ) -> io::Result<usize> {
+        self.submitter().enter(to_submit, min_complete, flag, sig)
     }
 
     /// Initiate asynchronous I/O. See [`Submitter::submit`] for more details.
